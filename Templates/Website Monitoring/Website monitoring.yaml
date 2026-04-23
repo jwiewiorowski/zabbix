@@ -1,0 +1,39 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 8644e511707949f49016315b1ccb8ddd
+      name: custom
+  templates:
+    - uuid: 19f174f5316440ae8a63cdd66e2b275a
+      template: 'WEBSITE MONITORING'
+      name: 'WEBSITE MONITORING'
+      groups:
+        - name: custom
+      httptests:
+        - uuid: 67ff8c3b75c34d518b5b2aeb66e7814f
+          name: 'Website Health Check'
+          agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36'
+          steps:
+            - name: 'Webpage Availbility'
+              url: '{$WEB.URL}'
+              status_codes: '200'
+      macros:
+        - macro: '{$POWIADOMIENIE}'
+          description: 'here we writes notify information'
+        - macro: '{$WEB.URL}'
+          value: 'https://google.com'
+          description: 'Here we add website url'
+  triggers:
+    - uuid: e98cbded7d2d48008cf8410f8c7f96ab
+      expression: 'min(/WEBSITE MONITORING/web.test.rspcode[Website Health Check,Webpage Availbility],#5)<>200'
+      name: 'Błąd strony {$WEB.URL}.'
+      priority: HIGH
+    - uuid: 17cf9d2d3eec4d8e85d2f62d88c8e269
+      expression: 'min(/WEBSITE MONITORING/web.test.time[Website Health Check,Webpage Availbility,resp],#5)>15'
+      name: 'Czas odpowiedzi strony {$WEB.URL} powyżej 15s'
+      priority: HIGH
+    - uuid: a94196c80f434e2baefa53d639b38754
+      expression: 'min(/WEBSITE MONITORING/web.test.fail[Website Health Check],#5)<>0'
+      name: '{$POWIADOMIENIE} Strona {$WEB.URL} nie odpowiada'
+      priority: DISASTER
+      manual_close: 'YES'
