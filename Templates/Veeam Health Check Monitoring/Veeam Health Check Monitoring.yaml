@@ -1,14 +1,11 @@
 zabbix_export:
   version: '7.0'
-  template_groups:
-    - uuid: f989ab42c8054c3b8fb9226758a01ed1
-      name: Lizard
   templates:
     - uuid: 423eb8f162b0453bab2e4914810ad7c4
       template: 'Veeam check Healthcheck'
       name: 'Veeam check Healthcheck'
       groups:
-        - name: Lizard
+        - name: Templates
       items:
         - uuid: 3477fc182319498a91edcb5422e19d02
           name: healthcheck_error
@@ -23,6 +20,6 @@ zabbix_export:
           triggers:
             - uuid: e312838a020048aaaa6d7cdf320dfc0c
               expression: 'find(/Veeam check Healthcheck/eventlog[Veeam Backup,,"Error",,41710,,skip],10h)=1'
-              name: 'Serwer ({HOST.NAME}): Veeam problem Healthcheck ( {ITEM.VALUE} )'
+              name: 'Server ({HOST.NAME}): Veeam Health Check problem ({ITEM.VALUE})'
               priority: AVERAGE
               manual_close: 'YES'
