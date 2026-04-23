@@ -1,0 +1,74 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: d348db6003364070a4ffe09d2037cc10
+      name: custom
+  templates:
+    - uuid: e141c4e6a5734cc19280b416c13781b5
+      template: 'Date Expiration alarm'
+      name: 'Date Expiration alarm'
+      groups:
+        - name: custom
+      items:
+        - uuid: f164b04c5f7044e5933fecec7ae19416
+          name: 'How many days left'
+          type: SCRIPT
+          key: zbliza_sie_data
+          delay: 1h
+          history: 7d
+          params: |
+            function daysUntilDate(dateString) {
+                // Check if value exists
+                if (!dateString) {
+                    return 0;
+                }
+            
+                // Remove extra spaces
+                dateString = dateString.trim();
+            
+                // Get today's date
+                var today = new Date();
+            
+                // Parse target date
+                var targetDate = new Date(dateString);
+            
+                // Validate date
+                if (isNaN(targetDate.getTime())) {
+                    return 0;
+                }
+            
+                // If date already passed
+                if (targetDate < today) {
+                    return 0;
+                }
+            
+                // Calculate time difference
+                var timeDiff = targetDate.getTime() - today.getTime();
+            
+                // Convert to days
+                var days = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            
+                return days;
+            }
+            
+            // Usage
+            var targetDate = "{$WHEN}";
+            return daysUntilDate(targetDate);
+          timeout: 60s
+          triggers:
+            - uuid: 2ba924d6c927476e83639767305ae338
+              expression: |
+                last(/Date Expiration alarm/zbliza_sie_data)<22 and
+                last(/Date Expiration alarm/zbliza_sie_data)>4
+              name: 'Expires in  {ITEM.LASTVALUE} days'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: e6b25896bba4482580b9d5e40e6a2cc7
+              expression: 'last(/Date Expiration alarm/zbliza_sie_data)<4'
+              name: 'Expiress in   {ITEM.LASTVALUE} days'
+              priority: DISASTER
+              manual_close: 'YES'
+      macros:
+        - macro: '{$WHEN}'
+          value: YYYY-MM-DD
+          description: 'date when should be alarm'
