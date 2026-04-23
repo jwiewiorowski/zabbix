@@ -1,0 +1,77 @@
+zabbix_export:
+  version: '8.0'
+  template_groups:
+    - uuid: 8644e511707949f49016315b1ccb8ddd
+      name: custom
+  templates:
+    - uuid: db12af2aa2c24df7887a1bc7b2869114
+      template: 'WINDOWS SERVER UPDATE'
+      name: 'WINDOWS SERVER UPDATE'
+      groups:
+        - name: custom
+      items:
+        - uuid: dde8e21958734a3fa462889e9ecc0f40
+          name: 'Windows Updates: how many package waiting for install'
+          type: ZABBIX_ACTIVE
+          key: 'system.run[powershell.exe -NoProfile -ExecutionPolicy Bypass -command "(New-Object -ComObject Microsoft.Update.Session).CreateUpdateSearcher().Search(''IsInstalled=0'').Updates.Count"]'
+          delay: 2h
+          history: 90d
+          description: 'Date when Windows Updates were last searched'
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 72641f5b8ee34fd183c24ae6d8fde3bf
+          name: 'Windows Updates: date of instalation'
+          type: ZABBIX_ACTIVE
+          key: 'system.run[powershell.exe -NoProfile -ExecutionPolicy Bypass -command Get-Date -Date ((New-Object -com "Microsoft.Update.AutoUpdate").Results.LastInstallationSuccessDate) -UFormat %s]'
+          delay: 2h
+          history: 90d
+          units: unixtime
+          description: 'Date when Windows Updates were last installed'
+          tags:
+            - tag: component
+              value: updates
+          triggers:
+            - uuid: 048d66c3f8ed49bcabf069a26d5f3dd7
+              expression: 'now() - last(/WINDOWS SERVER UPDATE/system.run[powershell.exe -NoProfile -ExecutionPolicy Bypass -command Get-Date -Date ((New-Object -com "Microsoft.Update.AutoUpdate").Results.LastInstallationSuccessDate) -UFormat %s]) < {$WIN_UPDATES.TRIGGERS.TIMEOUT} and {$WIN_UPDATES.TRIGGERS.INFO} <> 0'
+              name: 'New updates have been installed  {$WIN_UPDATES.TRIGGERS.TIMEOUT}'
+              opdata: 'Last install date: {ITEM.LASTVALUE}'
+              priority: INFO
+              dependencies:
+                - name: 'Reboot required by Windows Updates'
+                  expression: 'last(/WINDOWS SERVER UPDATE/system.run[powershell.exe -NoProfile -ExecutionPolicy Bypass -command Test-Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\''Auto Update''\RebootRequired])="True"'
+        - uuid: b4c7a3a562e649d68a96ee2727ffeb45
+          name: 'Windows Updates: date of search'
+          type: ZABBIX_ACTIVE
+          key: 'system.run[powershell.exe -NoProfile -ExecutionPolicy Bypass -command Get-Date -Date ((New-Object -com "Microsoft.Update.AutoUpdate").Results.LastSearchSuccessDate) -UFormat %s]'
+          delay: 2h
+          history: 90d
+          units: unixtime
+          description: 'Date when Windows Updates were last searched'
+          tags:
+            - tag: component
+              value: updates
+        - uuid: 24d87566f8134d2c86f8a392d90bb5c8
+          name: 'Windows Updates: Reboot required'
+          type: ZABBIX_ACTIVE
+          key: 'system.run[powershell.exe -NoProfile -ExecutionPolicy Bypass -command Test-Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\''Auto Update''\RebootRequired]'
+          delay: 2h
+          history: 90d
+          value_type: TEXT
+          description: 'Check if reboot is required for installing update(s)'
+          tags:
+            - tag: component
+              value: updates
+          triggers:
+            - uuid: 430bf2d38c4a4046afd1b3e8bc33da4e
+              expression: 'last(/WINDOWS SERVER UPDATE/system.run[powershell.exe -NoProfile -ExecutionPolicy Bypass -command Test-Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\''Auto Update''\RebootRequired])="True"'
+              name: 'Reboot required by Windows Updates'
+              priority: WARNING
+              manual_close: 'YES'
+      macros:
+        - macro: '{$WIN_UPDATES.TRIGGERS.INFO}'
+          value: '1'
+          description: 'Do you want to show info triggers concerning Windows Update.'
+        - macro: '{$WIN_UPDATES.TRIGGERS.TIMEOUT}'
+          value: 36h
+          description: 'What is the timeout for trigger concerning Windows Update.'
