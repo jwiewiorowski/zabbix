@@ -1,0 +1,1175 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 01548d1b601f4732b8b26c229305e5bf
+      template: 'AD DS Monitoring'
+      name: 'AD DS Monitoring'
+      groups:
+        - name: Templates
+      items:
+        - uuid: 695b6c3d15614060a8009d2e72730388
+          name: 'ATQ Threads Max'
+          type: CALCULATED
+          key: ATQThreadsMax
+          delay: 1d
+          params: '4 * last(//wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"])'
+        - uuid: 24998ab7ab2a4fa98c82ba9c731287ff
+          name: 'Baseline - DNS Total Query Received/sec'
+          type: CALCULATED
+          key: baseline.dns.query.rec
+          delay: 1d
+          params: '1.1*max(//perf_counter_en[\DNS\Total Query Received/sec],7d)'
+        - uuid: 60c4b5921b384d0caf99da45cac10e50
+          name: 'Baseline - DS Directory Searches/sec'
+          type: CALCULATED
+          key: baseline.ds.searches
+          units: /sec
+          params: '1.1*max(//perf_counter_en["\DirectoryServices(*)\DS Directory Searches/sec"],7d)'
+        - uuid: 1dd8df151b644f03b8bb55cef7e56356
+          name: 'Baseline - LDAP Client Sessions'
+          type: CALCULATED
+          key: baseline.ldap.client.session
+          delay: 1d
+          params: '1.1*max(//perf_counter_en[\NTDS\LDAP Client Sessions],7d)'
+        - uuid: 510bed9780f54dbc94521c1afbd668b0
+          name: 'Active Directory Web Services Events'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Active Directory Web Services,,"Warning|Error",,,,skip]'
+          delay: 10m
+          value_type: LOG
+          tags:
+            - tag: Application
+              value: 'AD DS Events'
+          triggers:
+            - uuid: 09121ac7fa8a4b64b8b6f45acdd64b4d
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Active Directory Web Services,,"Warning|Error",,,,skip])>1 and nodata(/AD DS Monitoring/eventlog[Active Directory Web Services,,"Warning|Error",,,,skip],1800s)=0'
+              name: 'AD DS: AD Web Services Warning/Error Detected'
+              priority: AVERAGE
+        - uuid: 6e038f783e4b44dc81038d0e3c3c7baf
+          name: 'DFS Replication Events'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[DFS Replication,,"Warning|Error",,,,skip]'
+          delay: 10m
+          value_type: LOG
+          tags:
+            - tag: Application
+              value: 'AD DS Events'
+          triggers:
+            - uuid: bf64470533d0470895cdebd814a37dc2
+              expression: 'logseverity(/AD DS Monitoring/eventlog[DFS Replication,,"Warning|Error",,,,skip])>1 and nodata(/AD DS Monitoring/eventlog[DFS Replication,,"Warning|Error",,,,skip],86400s)=0'
+              name: 'AD DS: DFS Replication Error Detected'
+              priority: AVERAGE
+              manual_close: 'YES'
+        - uuid: 3bc63708ad4340b08d7d50f3d7af7129
+          name: 'Directory Service Events'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Directory Service,,"Warning|Error",,,,skip]'
+          delay: 10m
+          value_type: LOG
+          tags:
+            - tag: Application
+              value: 'AD DS Events'
+          triggers:
+            - uuid: 79e002ed7b0c4bff92ca5461083c0ba0
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error",,,,skip])>1 and nodata(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error",,,,skip],86400s)=0'
+              name: 'AD DS: Directory Service Error Detected'
+              priority: HIGH
+        - uuid: 2876c86b52d849d8a1be69cb7ad5fea0
+          name: 'Directory Service Events'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Directory Service,,"Warning|Error|Critical"]'
+          value_type: LOG
+          triggers:
+            - uuid: 7010d269e99d419b8906dd9bacdaef8e
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"])>1 and nodata(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"],1800s)=0 and logeventid(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"],,"467")=1'
+              name: 'AD database corrupted on {HOST.NAME}'
+              priority: AVERAGE
+            - uuid: b8695c55f76440278441f6f7c15f19a4
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"])>1 and nodata(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"],1800s)=0 and logeventid(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"],,"2042")=1'
+              name: 'It has been too long since {HOST.NAME} replicated'
+              priority: HIGH
+              description: 'If a domain controller has not replicated with its partner for longer than a tombstone lifetime, it is possible that a lingering object problem exists on one or both domain controllers. The tombstone lifetime in an Active Directory forest determines how long a deleted object (called a "tombstone") is retained in Active Directory Domain Services (AD DS). The tombstone lifetime is determined by the value of the tombstoneLifetime attribute on the Directory Service object in the configuration directory partition.'
+            - uuid: 042f6347d5864a61a5a0e9eb97e81988
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"])=4 and nodata(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"],1800s)=0 and logeventid(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"],,"2095")=1'
+              recovery_mode: NONE
+              name: 'The USN rollback on {HOST.NAME}'
+              priority: DISASTER
+            - uuid: c3c0eedd48134c59a809144f1022ee3b
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"])>1 and nodata(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"],1800s)=0 and logeventid(/AD DS Monitoring/eventlog[Directory Service,,"Warning|Error|Critical"],,"2089")=1'
+              name: 'This directory partition has not been backed up since at least the following number of days.'
+              priority: WARNING
+        - uuid: 318dcb7c692947e08f126e056f77827f
+          name: 'DNS Server Events'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[DNS Server,,"Warning|Error|Critical"]'
+          delay: 10m
+          value_type: LOG
+          tags:
+            - tag: Application
+              value: 'AD DS Events'
+          triggers:
+            - uuid: a600b41075964c11a5ddccd0989e3192
+              expression: 'logseverity(/AD DS Monitoring/eventlog[DNS Server,,"Warning|Error|Critical"])>1'
+              name: 'AD DS: DNS Server Error Detected'
+              priority: AVERAGE
+            - uuid: bb946daacbdb4d6cbd23705fdb18b346
+              expression: 'logseverity(/AD DS Monitoring/eventlog[DNS Server,,"Warning|Error|Critical"])=2 and nodata(/AD DS Monitoring/eventlog[DNS Server,,"Warning|Error|Critical"],600s)=0 and logeventid(/AD DS Monitoring/eventlog[DNS Server,,"Warning|Error|Critical"],,"4515")=0'
+              name: 'Duplicate DNS zones were detected on {HOST.NAME}'
+              priority: WARNING
+        - uuid: f8cd4153d1d845eda7e80d5d9a4d2ea1
+          name: 'Windows Security (ID1102)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^1102$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: 7b638bcbe96348a88118df3e35ca9885
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^1102$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^1102$],600s)=0'
+              name: 'Windows Security: Audit Log Cleared (Event 1102)'
+              priority: DISASTER
+        - uuid: 5a1f83dd5fcd40d6a7b05408942995c1
+          name: 'Windows Security (ID4618)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4618$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: 02a677da7b4f4edf96f4c1eeb4640b78
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4618$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4618$],600s)=0'
+              name: 'Windows Security: Suspicious Event Pattern Detected (4618)'
+              priority: AVERAGE
+        - uuid: 5dda89be949a4f0ab18a07fc33ce7e99
+          name: 'Windows Security (ID4621)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4621$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: 8fcb23107d9844f0bb32a76425579c4e
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4621$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4621$],600s)=0'
+              name: 'AD DS: Suspicious Authentication Package Load (Event 4621)'
+              priority: HIGH
+        - uuid: 6fc86d0ca491411eb8957521ec02d600
+          name: 'Windows Security (ID4649)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4649$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: a32d136d5064419e9e1fd2742d7d37ad
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4649$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4649$],600s)=0'
+              name: 'Windows Security: Replay Attack Detected (Event 4649)'
+              priority: DISASTER
+        - uuid: c1c6b49139684ada8083f0db4fce38a7
+          name: 'Windows Security (ID4675)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4675$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: a2854448c3f343dda2e9655daf64fc45
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4675$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4675$],600s)=0'
+              name: 'AD DS: SID Filtering Detected (Event 4675)'
+              priority: AVERAGE
+        - uuid: 698b941c499247e1908fdbac56fa90af
+          name: 'Windows Security (ID4692)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4692$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: 2da06eb3467f44158bdaa5211e0accad
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4692$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4692$],600s)=0'
+              name: 'Windows Security: DPAPI Master Key Backup Attempt (4692)'
+              priority: HIGH
+        - uuid: 39fd9ad955444b9c9dd211f0d5a5f897
+          name: 'Windows Security (ID4693)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4693$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: f0ce3adc57a0439cbc7e7359524a9cbc
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4693$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4693$],600s)=0'
+              name: 'Windows Security: DPAPI Master Key Recovery Attempt (4693)'
+              priority: HIGH
+        - uuid: 523a6bd77d4143cc86968ec6565eda90
+          name: 'Windows Security (ID4706)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4706$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: e697f83fedc74af7bd70199d8026b686
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4706$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4706$],600s)=0'
+              name: 'AD DS: New Domain Trust Created (Event 4706)'
+              priority: HIGH
+        - uuid: d8f3f770e92049459f30bc87ec029357
+          name: 'Windows Security (ID4713)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4713$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: ed434c53835645398ac6eafe1147fe45
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4713$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4713$],600s)=0'
+              name: 'AD DS: Kerberos Policy Changed (Event 4713)'
+              priority: HIGH
+              tags:
+                - tag: AD
+                  value: 'Security events'
+        - uuid: 2e5f5e5d344a42938bb7867163e88536
+          name: 'Windows Security (ID4714)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4714$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: 711bf6b1c90e4ae886630c8c910acb5a
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4714$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4714$],600s)=0'
+              name: 'Windows Security: EFS Recovery Policy Changed (Event 4714)'
+              priority: AVERAGE
+        - uuid: fc98811677864a16862f9708365f8eff
+          name: 'Windows Security (ID4715)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4715$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: 41b6991ae3fa4a23ace4d46b24b50db3
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4715$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4715$],600s)=0'
+              name: 'Windows Security: Audit Policy Changed on Object (Event 4715)'
+              priority: HIGH
+        - uuid: d5ece95df77b482a91cd26857b6c5fc0
+          name: 'Windows Security (ID4716)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4716$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: b82eca50a7614cb5a1d06c1385df960d
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4716$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4716$],600s)=0'
+              name: 'AD DS: Trusted Domain Information Modified (Event 4716)'
+              priority: HIGH
+        - uuid: c03926a04fa24dc6b8ddd5619e746448
+          name: 'Windows Security (ID4719)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4719$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: 7fb2beafb04b4ed4b26b5bb1b6e535e9
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4719$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4719$],600s)=0'
+              name: 'Windows Security: System Audit Policy Changed (Event 4719)'
+              priority: HIGH
+        - uuid: 4c18075091cf401597ace7fcfd1860b0
+          name: 'Windows Security (ID4765)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4765$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: b7b92a75f9bd4173889ffb8dc6f15614
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4765$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4765$],600s)=0'
+              name: 'AD DS: SID History Added to Account (Event 4765)'
+              priority: HIGH
+        - uuid: acf8df44dc0f4a649dd2b72565be2abc
+          name: 'Windows Security (ID4766)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4766$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          triggers:
+            - uuid: 1a68517a7c6844fc97b578b0c32775fa
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4766$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4766$],600s)=0'
+              name: 'AD DS: SID History Addition Attempt (Event 4766)'
+              priority: HIGH
+        - uuid: 6155420326c143b2b5418ec49905da12
+          name: 'Windows Security (ID4794)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4794$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          triggers:
+            - uuid: 88da3dd769794a778707e1f631c7d7aa
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4794$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4794$],600s)=0'
+              name: 'AD DS: DSRM Password Change Attempt (Event 4794)'
+              priority: HIGH
+              tags:
+                - tag: AD
+                  value: 'Security events'
+        - uuid: 635238f251ea4d96a5c61c2f6314dfd2
+          name: 'Windows Security (ID4897)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4897$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          triggers:
+            - uuid: f38d5f45b67c43f5bc34c61eacb6b80b
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4897$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4897$],600s)=0'
+              name: 'AD CS: Role Separation Enabled (Event 4897)'
+              priority: HIGH
+              tags:
+                - tag: AD
+                  value: 'Security events'
+        - uuid: c5d92bdbce2747daa37a531b591da7c2
+          name: 'Windows Security (ID4964)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^4964$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: 66342afbc57a4ec99f7d7b7a102df380
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^4964$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^4964$],600s)=0'
+              name: 'AD DS: Privileged Logon Detected (Event 4964)'
+              priority: HIGH
+        - uuid: 62be794ab22b498b9c5f8b4d71422b4f
+          name: 'Windows Security (ID5124)'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[Security,,,,^5124$]'
+          delay: 10m
+          history: 365d
+          value_type: LOG
+          tags:
+            - tag: AD
+              value: 'Security events'
+          triggers:
+            - uuid: f03b0f6fd9f54041b5f3eba20e996481
+              expression: 'logseverity(/AD DS Monitoring/eventlog[Security,,,,^5124$])>1 and nodata(/AD DS Monitoring/eventlog[Security,,,,^5124$],600s)=0'
+              name: 'AD CS: OCSP Security Setting Changed (Event 5124)'
+              priority: DISASTER
+        - uuid: ab2c6969922a456a8afd057d2869650e
+          name: 'Windows Time Service Events'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[System,"Time-Service","Warning|Error|Critical"]'
+          delay: 10m
+          value_type: LOG
+          triggers:
+            - uuid: f0128a72484f43f38e9521a884d33cd0
+              expression: 'logseverity(/AD DS Monitoring/eventlog[System,"Time-Service","Warning|Error|Critical"])=2 and nodata(/AD DS Monitoring/eventlog[System,"Time-Service","Warning|Error|Critical"],600s)=0 and logeventid(/AD DS Monitoring/eventlog[System,"Time-Service","Warning|Error|Critical"],,"134")=1'
+              recovery_mode: NONE
+              name: 'NtpClient was unable to set a manual peer to use as a time source on {HOST.NAME}'
+              priority: WARNING
+            - uuid: ef64ea6debda4127a60be0be28f99389
+              expression: 'logseverity(/AD DS Monitoring/eventlog[System,"Time-Service","Warning|Error|Critical"])=4 and nodata(/AD DS Monitoring/eventlog[System,"Time-Service","Warning|Error|Critical"],600s)=0 and logeventid(/AD DS Monitoring/eventlog[System,"Time-Service","Warning|Error|Critical"],,"4")=1'
+              recovery_mode: NONE
+              name: 'The kerberos client received a KRB_AP_ERR_MODIFIED error on {HOST.NAME}'
+              priority: WARNING
+        - uuid: aa00bdf38af14656b6e0a62c3e784302
+          name: 'NETLOGON Events'
+          type: ZABBIX_ACTIVE
+          key: 'eventlog[System,,"Error","NETLOGON",^5723$]'
+          delay: 10m
+          value_type: LOG
+          triggers:
+            - uuid: 34bbe78a8bbe46b9ae91b7b7760a3e1c
+              expression: 'logseverity(/AD DS Monitoring/eventlog[System,,"Error","NETLOGON",^5723$])>1 and nodata(/AD DS Monitoring/eventlog[System,,"Error","NETLOGON",^5723$],1800s)=0'
+              name: 'Netlogon Error on {HOST.NAME}'
+              priority: WARNING
+        - uuid: 93e75bda905447deb9d1a42145c5469c
+          name: 'LogFile (Netlogon)'
+          key: 'log[c:\windows\debug\netlogon.log,"NO_CLIENT_SITE",,,skip,,,]'
+          delay: 10m
+          history: 90d
+          value_type: LOG
+          triggers:
+            - uuid: f90204087683492aa3cd9af75e785924
+              expression: 'nodata(/AD DS Monitoring/log[c:\windows\debug\netlogon.log,"NO_CLIENT_SITE",,,skip,,,],3600)=0'
+              name: 'Active Directory Missing IP Range < - > Site Allocations'
+              priority: WARNING
+        - uuid: 8a2bab9d796b4afc83153df20c066283
+          name: MaxConcurrentApi
+          type: CALCULATED
+          key: MaxConcurrentApi
+          delay: 10m
+          value_type: FLOAT
+          params: '(last(//perf_counter_en[\Netlogon(_Total)\Semaphore Acquires])+last(//perf_counter_en[\Netlogon(_Total)\Semaphore Timeouts]))*last(//perf_counter_en[\Netlogon(_Total)\Average Semaphore Hold Time])/90'
+        - uuid: 05b3212f511f4e6a886c45c0968cf27e
+          name: 'Kerberos Port 464'
+          key: 'net.tcp.listen[464]'
+          valuemap:
+            name: 'Service state'
+        - uuid: 58090b6d00294bcbab4c585bafbe6c02
+          name: 'LDAPS Port 636'
+          key: 'net.tcp.listen[636]'
+        - uuid: a350d41f353044678a3575fc776fa73e
+          name: 'Global Catalog Port 3268'
+          key: 'net.tcp.listen[3268]'
+        - uuid: 7be0f71660d04892a08821630e5a9f5b
+          name: 'Global Catalog Port 3269'
+          key: 'net.tcp.listen[3269]'
+        - uuid: 91dc10e30b9244cc8584124a159d303c
+          name: 'LDAP Port is running'
+          type: SIMPLE
+          key: 'net.tcp.service[ldap]'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Network ports'
+          triggers:
+            - uuid: 261faef601b54be4acc42985f5f3d88f
+              expression: 'min(/AD DS Monitoring/net.tcp.service[ldap],#3)=0'
+              name: 'AD DS: Critical Authentication Service Failure (LDAP)'
+              priority: DISASTER
+        - uuid: 3db6e037983940d9be2c778c5d4bfade
+          name: 'I/O Database Reads/sec'
+          key: 'perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Database Reads/sec"]'
+          value_type: FLOAT
+          units: /s
+          description: 'perf_counter[\Database ==> Instances(lsass/NTDSA)\I/O Database Reads/sec]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+          triggers:
+            - uuid: 71807bb6e6d0416fbaa68fb74833be03
+              expression: 'min(/AD DS Monitoring/perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Database Reads/sec"],#3)>10'
+              name: 'AD DS: High NTDS Database Read Activity Detected'
+              priority: AVERAGE
+        - uuid: 7c33e63e882a48148348477a866a7545
+          name: 'I/O Database Reads Average Latency'
+          key: 'perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Database Reads Average Latency"]'
+          value_type: FLOAT
+          units: ms
+          description: 'perf_counter[\Database ==> Instances(lsass/NTDSA)\I/O Database Reads Average Latency]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+          triggers:
+            - uuid: 4ba50e9ab3c548ed9f7670aaf2d9fc64
+              expression: 'min(/AD DS Monitoring/perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Database Reads Average Latency"],#3)>15'
+              name: 'AD DS: High NTDS Read Latency Detected (>15ms)'
+              priority: AVERAGE
+        - uuid: e95e676378d24f9cb5cfe58da9e24218
+          name: 'I/O Log Writes Average Latency'
+          key: 'perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Log Writes Average Latency"]'
+          value_type: FLOAT
+          units: ms
+          description: 'perf_counter[\Database ==> Instances(lsass/NTDSA)\I/O Log Writes Average Latency]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+          triggers:
+            - uuid: 611b5fa4963348ac8e79dae0bce0233f
+              expression: 'min(/AD DS Monitoring/perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Log Writes Average Latency"],#3)>10'
+              name: 'AD DS: High NTDS Log Write Latency Detected (>10ms)'
+              priority: AVERAGE
+        - uuid: a0714f8bb24a482481d5c84f77962b80
+          name: 'I/O Log Writes/sec'
+          key: 'perf_counter_en["\Database ==> Instances(lsass/NTDSA)\Log Writes/sec"]'
+          value_type: FLOAT
+          units: /s
+          description: 'perf_counter[\Database ==> Instances(lsass/NTDSA)\I/O Log Writes/sec]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: 3d7e8d2a27254ecd8a0d7371d5c38fbc
+          name: 'DS Directory Searches/sec'
+          key: 'perf_counter_en["\DirectoryServices(*)\DS Directory Searches/sec"]'
+          delay: 15m
+          value_type: FLOAT
+          units: /sec
+        - uuid: e3063ed6bcb242d6ba43b4f3ca117ced
+          name: 'DRA Inbound Bytes Total/sec'
+          key: 'perf_counter_en["\DirectoryServices(NTDS)\DRA Inbound Bytes Total/sec"]'
+          value_type: FLOAT
+          units: /s
+          description: 'perf_counter[\NTDA\DRA Inbound Bytes Total/sec]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: edd8fbbf1dd449d495c03a6c895cbdb9
+          name: 'DRA Inbound Object Updates Remaining in Packet'
+          key: 'perf_counter_en["\DirectoryServices(NTDS)\DRA Inbound Object Updates Remaining in Packet"]'
+          value_type: FLOAT
+          description: 'perf_counter[\NTDA\DRA Inbound Object Updates Remaining in Packet]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: ec722579ddf44498ae228a54231f0c5f
+          name: 'DRA Pending Replication Synchronizations'
+          key: 'perf_counter_en["\DirectoryServices(NTDS)\DRA Pending Replication Synchronizations"]'
+          value_type: FLOAT
+          description: 'perf_counter[\NTDA\DRA Pending Replication Synchronizations]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: fe58cbd89ba94e34a70e09603bfda810
+          name: 'LDAP Active Threads'
+          key: 'perf_counter_en["\NTDS\LDAP Active Threads"]'
+          value_type: FLOAT
+          description: 'perf_counter[\NTDS\LDAP Active Threads]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: fd3c312d6c944f4c8455a258dbb0ecd5
+          name: 'LDAP Client Sessions'
+          key: 'perf_counter_en["\NTDS\LDAP Client Sessions"]'
+          value_type: FLOAT
+          description: |
+            perf_counter[\NTDS\LDAP Client Sessions]
+            
+            perf_counter[\6956\17274]
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: 0a0508bd91f146669482a2bdc45749a7
+          name: 'LDAP Searches/sec'
+          key: 'perf_counter_en["\NTDS\LDAP Searches/sec"]'
+          value_type: FLOAT
+          units: /s
+          description: 'perf_counter[\NTDS\LDAP Searches/sec]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: fb193d229d3b4757b289c8ad40f09b1a
+          name: 'LDAP Writes/sec'
+          key: 'perf_counter_en["\NTDS\LDAP Writes/sec"]'
+          value_type: FLOAT
+          units: /s
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: 398955ae5e6745ba84b275862bca1031
+          name: 'Kerberos Authentications'
+          key: 'perf_counter_en["\Security System-Wide Statistics\Kerberos Authentications"]'
+          value_type: FLOAT
+          units: /s
+          description: 'perf_counter[\Security system-wide statistics\Kerberos Authentications]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: 23535be77abd4eb5a262f9953978cf80
+          name: 'NTLM Authentications'
+          key: 'perf_counter_en["\Security System-Wide Statistics\NTLM Authentications"]'
+          value_type: FLOAT
+          units: /s
+          description: 'perf_counter[\Security system-wide statistics\NTLM Authentications]'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+        - uuid: 5a8c07376a9a42dcaa112c18730b190f
+          name: 'Database Cache % Hit'
+          key: 'perf_counter_en[\Database(lsass)\Database Cache % Hit]'
+          value_type: FLOAT
+          units: '%'
+          description: 'The "Database Cache % Hit" performance counter for LSASS (Local Security Authority Subsystem Service) indicates the percentage of database queries that are served from the cache, rather than requiring a disk read. A high hit rate (ideally above 90%) signifies efficient database access, while a low hit rate might indicate performance bottlenecks related to disk I/O or insufficient memory allocated for caching.'
+          triggers:
+            - uuid: 1ac2e913989a47e6818ac117f1cf5ee6
+              expression: 'min(/AD DS Monitoring/perf_counter_en[\Database(lsass)\Database Cache % Hit],15m)<90'
+              name: 'Database Cache % Hit < 90 % on {HOST.NAME}'
+              priority: WARNING
+        - uuid: e3866d13c43a4662b07a1b5a7ab423dd
+          name: 'I/O Database Reads/sec'
+          key: 'perf_counter_en[\Database ==> Instances(lsass/NTDSA)\I/O Database Reads/sec]'
+          value_type: FLOAT
+          units: /s
+          triggers:
+            - uuid: e557986fce4d4ce48d13d4ab528c4716
+              expression: 'min(/AD DS Monitoring/perf_counter_en[\Database ==> Instances(lsass/NTDSA)\I/O Database Reads/sec],5m)>10'
+              name: 'I/O Database Reads/sec > 10 on {HOST.NAME}'
+              priority: WARNING
+        - uuid: 119b006939a847499cc73f999daa34c8
+          name: 'DFS Replicated Folders (Conflict Space In Use)'
+          key: 'perf_counter_en[\DFS Replicated Folders(*)\Conflict Space In Use]'
+          delay: 15m
+          value_type: FLOAT
+          units: Bytes
+        - uuid: 415b2ccc15e7471185577b6aec09f447
+          name: 'DFS Replicated Folders (RDC Bytes Received)'
+          key: 'perf_counter_en[\DFS Replicated Folders(*)\RDC Bytes Received]'
+          delay: 10m
+          value_type: FLOAT
+        - uuid: bd1302bed1c74811ade093861e279d60
+          name: 'DFS Replicated Folders (Size of Files Received)'
+          key: 'perf_counter_en[\DFS Replicated Folders(*)\Size of Files Received]'
+          delay: 10m
+          value_type: FLOAT
+        - uuid: 70221627f5864dd39267a1ac10a3d393
+          name: 'DFS Replicated Folders (Staging Space In Use)'
+          key: 'perf_counter_en[\DFS Replicated Folders(*)\Staging Space In Use]'
+          delay: 15m
+          value_type: FLOAT
+          units: Bytes
+        - uuid: 12af307ab56c48718a7f1197451c2050
+          name: 'ATQ Outstanding queued requests total'
+          key: 'perf_counter_en[\DirectoryServices(NTDS)\ATQ Outstanding Queued Requests]'
+          value_type: FLOAT
+        - uuid: f7950897eb0546d38e8cbe843d98aeab
+          name: 'ATQ Threads total'
+          key: 'perf_counter_en[\DirectoryServices(NTDS)\ATQ Threads Total]'
+          value_type: FLOAT
+        - uuid: f3a0a4d6a8f24135ac4cdd1da06558a9
+          name: 'LDAP Bind time'
+          key: 'perf_counter_en[\DirectoryServices(NTDS)\LDAP Bind Time]'
+          value_type: FLOAT
+          units: ms
+          description: 'LDAP bind time refers to the duration it takes for a client to establish a connection with an LDAP server for authentication. It''s a crucial performance metric that indicates the server''s responsiveness and can impact user experience and overall directory service performance.'
+          triggers:
+            - uuid: 7bf0bf030abe4ffbad32b5b4f252dd5a
+              expression: 'min(/AD DS Monitoring/perf_counter_en[\DirectoryServices(NTDS)\LDAP Bind Time],5m)>20'
+              name: 'LDAP Bind Time > 20ms on {HOST.NAME}'
+              priority: WARNING
+            - uuid: 741dd991c8344d5c9dd60c37adfb0caa
+              expression: 'min(/AD DS Monitoring/perf_counter_en[\DirectoryServices(NTDS)\LDAP Bind Time],5m)>30'
+              name: 'LDAP Bind Time > 30ms on {HOST.NAME}'
+              priority: AVERAGE
+        - uuid: 6edda281e01041ca93c17eb3c925955f
+          name: 'Simple Binds/sec'
+          key: 'perf_counter_en[\DirectoryServices(NTDS)\Simple Binds/sec]'
+          units: /s
+          description: 'In LDAP, a simple bind is a basic method of authentication where a client provides a distinguished name (DN) and password to the server, which then verifies these credentials.'
+        - uuid: e7d4a809b7b0458fa810aa7dc6ce7d45
+          name: 'DNS Rejected dynamic updates'
+          key: 'perf_counter_en[\DNS\Dynamic update Rejected]'
+          value_type: FLOAT
+        - uuid: 195ff36669ec49ac8ba41b17b3bf3520
+          name: 'DNS Dynamic update timeouts'
+          key: 'perf_counter_en[\DNS\Dynamic update TimeOuts]'
+          value_type: FLOAT
+        - uuid: ce395ea7dd074b5cbcbdcb9eb850a859
+          name: 'DNS Recursive Query Failure/sec'
+          key: 'perf_counter_en[\DNS\Recursive Query Failure/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: 27bf63abf1d84f7ea7c40169e671d822
+          name: 'DNS Total Query Received/sec'
+          key: 'perf_counter_en[\DNS\Total Query Received/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: 99850fd28f6c4644b85147dd3d7fe304
+          name: 'DNS Total Response Sent/sec'
+          key: 'perf_counter_en[\DNS\Total Response Sent/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: c87683b9a119415e8f6a99b59a2c8b8c
+          name: 'DNS UDP Query Received/sec'
+          key: 'perf_counter_en[\DNS\UDP Query Received/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: 5a098529488c4e8c844c6864d99e3e96
+          name: 'DNS UDP Response Sent/sec'
+          key: 'perf_counter_en[\DNS\UDP Response Sent/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: 1bedbcb5eaee4532b348ee12fad1247d
+          name: 'Netlogon Average Semaphore Hold Time'
+          key: 'perf_counter_en[\Netlogon(_Total)\Average Semaphore Hold Time]'
+          value_type: FLOAT
+          units: s
+          triggers:
+            - uuid: 9196d332d5f4455a83925c928f9669b9
+              expression: 'min(/AD DS Monitoring/perf_counter_en[\Netlogon(_Total)\Average Semaphore Hold Time],15m)>1'
+              name: 'Average Semaphore Hold Time > 1s on {HOST.NAME}'
+              priority: WARNING
+        - uuid: 01d521d2d9a94d84a5e7a1022eda336a
+          name: 'Netlogon Last Authentication Time'
+          key: 'perf_counter_en[\Netlogon(_Total)\Last Authentication Time]'
+          value_type: FLOAT
+          units: s
+        - uuid: b81fe4d6304a40dc99ce104b6479553d
+          name: 'Netlogon Semaphore Acquires'
+          key: 'perf_counter_en[\Netlogon(_Total)\Semaphore Acquires]'
+          value_type: FLOAT
+        - uuid: 4ae95612ed6c4f208619ebfdf1d6b8b0
+          name: 'Netlogon Semaphore Timeouts'
+          key: 'perf_counter_en[\Netlogon(_Total)\Semaphore Timeouts]'
+        - uuid: 74c22c42681d43779f46421c0f527200
+          name: 'DRA Inbound Bytes Total/sec'
+          key: 'perf_counter_en[\NTDS\DRA Inbound Bytes Total/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: 6c49ac6f75a6490681d173e9cfcc98c3
+          name: 'DRA Inbound Object Updates Remaining in Packet'
+          key: 'perf_counter_en[\NTDS\DRA Inbound Object Updates Remaining in Packet]'
+          value_type: FLOAT
+        - uuid: a4778518897e48be999e4c93b74e2209
+          name: 'DRA Outbound Bytes Total/sec'
+          key: 'perf_counter_en[\NTDS\DRA Outbound Bytes Total/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: ec1b53382b74438da5b469f588f3356b
+          name: 'DRA Pending Replication Operations'
+          key: 'perf_counter_en[\NTDS\DRA Pending Replication Operations]'
+          value_type: FLOAT
+        - uuid: 8a8e002a78b24430a1d3eafb8cda07df
+          name: 'DRA Pending Replication Synchronizations'
+          key: 'perf_counter_en[\NTDS\DRA Pending Replication Synchronizations]'
+          value_type: FLOAT
+        - uuid: 254f1ca5e1f34078a8562c26b90accbd
+          name: 'LDAP Client Sessions'
+          key: 'perf_counter_en[\NTDS\LDAP Client Sessions]'
+          value_type: FLOAT
+        - uuid: 995172774937455581e4aa1ea4267ddf
+          name: 'LDAP New Connections/sec'
+          key: 'perf_counter_en[\NTDS\LDAP New Connections/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: 75bfc6aa96e14d8aa4b24eb039e915c0
+          name: 'LDAP New SSL Connections/sec'
+          key: 'perf_counter_en[\NTDS\LDAP New SSL Connections/sec]'
+          value_type: FLOAT
+          units: /s
+        - uuid: 74f30bad16e44877a869105e6f8bcc52
+          name: 'LSASS Processor Time'
+          key: 'perf_counter_en[\Process(lsass)\% Processor Time]'
+          value_type: FLOAT
+          units: '%'
+          description: |
+            Metric Process % Processor Time of LSASS
+            perf_counter[\Process(lsass)\% Processor Time]
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+          triggers:
+            - uuid: cae181585bdb4a6ab9f2bcf2bcd150ba
+              expression: 'min(/AD DS Monitoring/perf_counter_en[\Process(lsass)\% Processor Time],15m)>70'
+              name: 'AD DS: High LSASS CPU Usage Detected (>70% / 15m)'
+              priority: AVERAGE
+        - uuid: aed990ee0559476cb508ff20caa735b2
+          name: 'LSASS Memory'
+          key: 'perf_counter_en[\Process(lsass*)\Working Set]'
+          value_type: FLOAT
+          units: bytes
+        - uuid: 3031c8a2c8d843c587506103afb40dbb
+          name: 'Windows Time Computed Time Offset'
+          key: 'perf_counter_en[\Windows Time Service\Computed Time Offset]'
+          value_type: FLOAT
+          description: 'The absolute time offset between the system clock and the chosen time source, as computed by the W32Time service in microseconds. When a new valid sample is available, the computed time is updated with the time offset indicated by the sample. This time is the actual time offset of the local clock. W32Time initiates clock correction by using this offset and updates the computed time in between samples with the remaining time offset that needs to be applied to the local clock. Clock accuracy can be tracked by using this performance counter with a low polling interval (for example, 256 seconds or less) and looking for the counter value to be smaller than the desired clock accuracy limit.'
+          tags:
+            - tag: Application
+              value: 'AD DS Performance'
+          triggers:
+            - uuid: 64270c1771584049a3c09ae4a1080d59
+              expression: 'min(/AD DS Monitoring/perf_counter_en[\Windows Time Service\Computed Time Offset],5m)>100000000'
+              name: 'Time Offset from Source is > 1 minute on host {HOST.NAME}'
+              priority: AVERAGE
+        - uuid: e41135a4576748feb10139ed8914679b
+          name: 'State of service "ADWS" (Active Directory Web Services)'
+          key: 'service.info[ADWS,state]'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: c1ee503e7fb749c582e1449240042485
+              expression: 'min(/AD DS Monitoring/service.info[ADWS,state],#3)<>0'
+              name: '"ADWS" (Active Directory Web Services) is not running'
+              priority: AVERAGE
+        - uuid: f3ecb9e253c6461ea76380065038691a
+          name: 'State of service "DFSR" (DFS Replication)'
+          key: 'service.info[DFSR,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: c083c0a8ce87411090d8c9ab45295bed
+              expression: 'min(/AD DS Monitoring/service.info[DFSR,state],#3)<>0'
+              name: '"DFSR" (DFS Replication) is not running'
+              priority: AVERAGE
+        - uuid: d24b0eacadee48d489d32a01f17dd08f
+          name: 'State of service "DNS" (DNS Server)'
+          key: 'service.info[DNS,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 8097eaa99b524e858a27b418ff0f30a1
+              expression: 'min(/AD DS Monitoring/service.info[DNS,state],#3)<>0'
+              name: '"DNS" (DNS Server) is not running'
+              priority: AVERAGE
+        - uuid: 4e64610f63084ea4848725a0dbad3e1c
+          name: 'State of service "Dnscache" (DNS Client)'
+          key: 'service.info[Dnscache,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 806d9fbdda534aa5bfc8394bfa1141f4
+              expression: 'min(/AD DS Monitoring/service.info[Dnscache,state],#3)<>0'
+              name: '"Dnscache" (DNS Client) is not running'
+              priority: AVERAGE
+        - uuid: 3b2c1878d0d0457cacd23e66bb03372f
+          name: 'State of service "IsmServ" (Intersite Messaging)'
+          key: 'service.info[IsmServ,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 44c96434e99c461485b9da8b0406aeb0
+              expression: 'min(/AD DS Monitoring/service.info[IsmServ,state],#3)<>0'
+              name: '"IsmServ" (Intersite Messaging) is not running'
+              priority: AVERAGE
+        - uuid: 471d8f66c77440c688130a9bdda37237
+          name: 'State of service "Kdc" (Kerberos Key Distribution Center)'
+          key: 'service.info[Kdc,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 87f475f687ed450281222195fcb09580
+              expression: 'min(/AD DS Monitoring/service.info[Kdc,state],#3)<>0'
+              name: '"Kdc" (Kerberos Key Distribution Center) is not running'
+              priority: AVERAGE
+        - uuid: abe4419278df46919650a2c7fb2529dc
+          name: 'State of service "LanmanServer" (Server)'
+          key: 'service.info[LanmanServer,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 0755e32bfb3247c3beee6d4c9baf4d37
+              expression: 'min(/AD DS Monitoring/service.info[LanmanServer,state],#3)<>0'
+              name: '"LanmanServer" (Server) is not running'
+              priority: AVERAGE
+        - uuid: d7703e9177ed4bb3b39a26ffd4a05d01
+          name: 'State of service "LanmanWorkstation" (Workstation)'
+          key: 'service.info[LanmanWorkstation,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: f1190af17d99473b9f430a7aded0a3ab
+              expression: 'min(/AD DS Monitoring/service.info[LanmanWorkstation,state],#3)<>0'
+              name: '"LanmanWorkstation" (Workstation) is not running'
+              priority: AVERAGE
+        - uuid: b4211d9f04584ecd82347bd0d6b2f8a2
+          name: 'State of service "Netlogon" (Netlogon)'
+          key: 'service.info[Netlogon,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 25e12d59ab724a2382321edc65b987d4
+              expression: 'min(/AD DS Monitoring/service.info[Netlogon,state],#3)<>0'
+              name: '"Netlogon" (Netlogon) is not running'
+              priority: AVERAGE
+        - uuid: 88f276de2d294bb3a4e5d61ba07016ef
+          name: 'State of service "NTDS" (Active Directory Domain Services)'
+          key: 'service.info[NTDS,state]'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 0eba05be60c74e22bafdc3f1a7e5c2c8
+              expression: 'min(/AD DS Monitoring/service.info[NTDS,state],#3)<>0'
+              name: '"NTDS" (Active Directory Domain Services) is not running'
+              priority: AVERAGE
+        - uuid: 8117eba15a204854b3ac605add3ee3ec
+          name: 'State of service "RpcSs" (Remote Procedure Call (RPC))'
+          key: 'service.info[RpcSs,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: a75ffb101c8c4da683172cd5167f86e9
+              expression: 'min(/AD DS Monitoring/service.info[RpcSs,state],#3)<>0'
+              name: '"RpcSs" (Remote Procedure Call (RPC)) is not running'
+              priority: AVERAGE
+        - uuid: 05f4a569578c407cb0b23e52eba2f866
+          name: 'State of service "SamSs" (Security Accounts Manager)'
+          key: 'service.info[SamSs,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 176aa80281a844a683005b4c1fbebe7b
+              expression: 'min(/AD DS Monitoring/service.info[SamSs,state],#3)<>0'
+              name: '"SamSs" (Security Accounts Manager) is not running'
+              priority: AVERAGE
+        - uuid: bd16befae95d43e88908648d833e1b83
+          name: 'State of service "W32Time" (Windows Time)'
+          key: 'service.info[W32Time,state]'
+          history: 1d
+          valuemap:
+            name: 'Windows service state'
+          tags:
+            - tag: Application
+              value: 'AD DS Services'
+          triggers:
+            - uuid: 06d96b736c0e456dbf14e4418e4700b6
+              expression: 'min(/AD DS Monitoring/service.info[W32Time,state],#3)<>0'
+              name: '"W32Time" (Windows Time) is not running'
+              priority: AVERAGE
+        - uuid: 4dafb4d6a4fb41e39f4322d32bcf2cd2
+          name: 'SYSVOL Size'
+          key: 'vfs.dir.size["{$ADSYSVOL_PATH}"]'
+          delay: 12h
+          units: Bytes
+        - uuid: ba3ea33ddbe0483aa1dd88c68b1e517b
+          name: 'Database Size'
+          key: 'vfs.file.size["{$ADDB_PATH}"]'
+          delay: 1h
+          units: Bytes
+          tags:
+            - tag: Application
+              value: 'AD DS Storage'
+        - uuid: dc3cc0c66aa145c1bceab822e32c6556
+          name: 'Log File Size'
+          key: 'vfs.file.size["{$ADLOG_PATH}"]'
+          delay: 1h
+          units: Bytes
+          tags:
+            - tag: Application
+              value: 'AD DS Storage'
+      tags:
+        - tag: DZIAŁ
+          value: SERWERY
+      macros:
+        - macro: '{$ADDB_PATH}'
+          value: 'c:\windows\ntds\ntds.dit'
+        - macro: '{$ADLOG_PATH}'
+          value: 'c:\windows\ntds\edb.log'
+        - macro: '{$ADSYSVOL_PATH}'
+          value: 'c:\windows\SYSVOL'
+        - macro: '{$DNS.TOTAL.RECEIVED.MAX.WARN}'
+          value: '500'
+        - macro: '{$LDAP.CLIENT.SESSIONS.WARN}'
+          value: '1000'
+      valuemaps:
+        - uuid: 7d7a9ff770b0415781bbc49c400a60ed
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 533232df55a847d4861fd1dd95d73baa
+          name: 'Windows service state'
+          mappings:
+            - value: '0'
+              newvalue: Running
+            - value: '1'
+              newvalue: Paused
+            - value: '2'
+              newvalue: 'Start pending'
+            - value: '3'
+              newvalue: 'Pause pending'
+            - value: '4'
+              newvalue: 'Continue pending'
+            - value: '5'
+              newvalue: 'Stop pending'
+            - value: '6'
+              newvalue: Stopped
+            - value: '7'
+              newvalue: Unknown
+            - value: '255'
+              newvalue: 'No such service'
+  triggers:
+    - uuid: 5a0330fd042347e9b22f92bae8938be0
+      expression: 'avg(/AD DS Monitoring/perf_counter_en[\DirectoryServices(NTDS)\ATQ Threads Total],10m)>last(/AD DS Monitoring/ATQThreadsMax)'
+      name: 'ATQ Thread Exhaustion on host {HOST.NAME}'
+      priority: AVERAGE
+    - uuid: 2796bba159904ad3a310161ac93daa7b
+      expression: 'max(/AD DS Monitoring/perf_counter_en[\DNS\Total Query Received/sec],#3)>last(/AD DS Monitoring/baseline.dns.query.rec)'
+      name: 'DNS Total Query Received/sec is anomalously high on {HOST.NAME}'
+      opdata: 'Current value: {ITEM.LASTVALUE1}'
+      priority: AVERAGE
+    - uuid: 3db3a1e8e2d4494cb3f20abddb72e064
+      expression: 'max(/AD DS Monitoring/perf_counter_en["\DirectoryServices(*)\DS Directory Searches/sec"],#3)>last(/AD DS Monitoring/baseline.ds.searches)'
+      name: 'DS Directory Searches/sec is anomalously high on {HOST.NAME}'
+      opdata: 'Current value: {ITEM.LASTVALUE1}'
+      priority: WARNING
+    - uuid: c29228068d244a7f82b075fcc1f6c2f0
+      expression: 'max(/AD DS Monitoring/perf_counter_en[\NTDS\LDAP Client Sessions],#3)>last(/AD DS Monitoring/baseline.ldap.client.session)'
+      name: 'LDAP Client Sessions is anomalously high on {HOST.NAME}'
+      priority: WARNING
+  graphs:
+    - uuid: e0e4a9ff9ece4fa6b353ea55412f6763
+      name: 'AD DS Authentications'
+      ymin_type_1: FIXED
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\Security System-Wide Statistics\Kerberos Authentications"]'
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\Security System-Wide Statistics\NTLM Authentications"]'
+    - uuid: bc99aef7310540cfa51279096b10d1ec
+      name: 'AD DS DB and Log Size'
+      ymin_type_1: FIXED
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'AD DS Monitoring'
+            key: 'vfs.file.size["{$ADDB_PATH}"]'
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'AD DS Monitoring'
+            key: 'vfs.file.size["{$ADLOG_PATH}"]'
+    - uuid: d2bf271b0e4d4a33af6ffb19f8e289f2
+      name: 'Database ==> Instances Statistics'
+      ymin_type_1: FIXED
+      graph_items:
+        - color: 1A7C11
+          yaxisside: RIGHT
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Database Reads/sec"]'
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Database Reads Average Latency"]'
+        - sortorder: '2'
+          color: 2774A4
+          yaxisside: RIGHT
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\Database ==> Instances(lsass/NTDSA)\Log Writes/sec"]'
+        - sortorder: '3'
+          color: A54F10
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\Database ==> Instances(lsass/NTDSA)\I/O Log Writes Average Latency"]'
+    - uuid: 8abeb5f241e14635a3ba13d12fed6b07
+      name: 'DRA Statistics'
+      ymin_type_1: FIXED
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\DirectoryServices(NTDS)\DRA Inbound Object Updates Remaining in Packet"]'
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\DirectoryServices(NTDS)\DRA Pending Replication Synchronizations"]'
+        - sortorder: '2'
+          color: 2774A4
+          yaxisside: RIGHT
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\DirectoryServices(NTDS)\DRA Inbound Bytes Total/sec"]'
+    - uuid: 2833f9419ee542f794a3d78a22761661
+      name: 'LDAP Statistics'
+      ymin_type_1: FIXED
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\NTDS\LDAP Client Sessions"]'
+        - sortorder: '1'
+          color: F63100
+          yaxisside: RIGHT
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\NTDS\LDAP Searches/sec"]'
+        - sortorder: '2'
+          color: 2774A4
+          yaxisside: RIGHT
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en["\NTDS\LDAP Writes/sec"]'
+    - uuid: 884320ad4d09490bafa58242da0fdc9a
+      name: 'LSASS Processor Time'
+      show_work_period: 'NO'
+      show_triggers: 'NO'
+      show_legend: 'NO'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - drawtype: FILLED_REGION
+          color: 1A7C11
+          item:
+            host: 'AD DS Monitoring'
+            key: 'perf_counter_en[\Process(lsass)\% Processor Time]'
