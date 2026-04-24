@@ -38,8 +38,11 @@ Create the file:
 nano /etc/zabbix/sites.txt
 
 Add domains (one per line):
+
 example.com
+
 google.com
+
 yourdomain.com
 
 3. Restart agent
