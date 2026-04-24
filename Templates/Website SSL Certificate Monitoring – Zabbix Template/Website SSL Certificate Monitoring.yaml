@@ -1,0 +1,201 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 5630ec1b1baf449abe1bc5521f85fe6c
+      template: 'Website certificate SSL by Zabbix agent 2'
+      name: 'Website certificate SSL by Zabbix agent 2'
+      groups:
+        - name: Templates
+      discovery_rules:
+        - uuid: 325230a06ef14330b1c4a14476770fcc
+          name: 'SSL discovery'
+          key: cert.discovery
+          description: |
+            you have to prepare 2 file:
+            1. nano /etc/zabbix/zabbix_agent2.d/plugins.d/cert.conf
+            UserParameter=cert.discovery,printf '{"data":['; awk '{printf "%s{\"{#HOST}\":\"%s\"}", NR==1?"":",",$1}' /etc/zabbix/sites.txt; printf ']}'
+            
+            2 nano /etc/zabbix/sites.txt  
+            to that txt you put website url
+          item_prototypes:
+            - uuid: c2b0d68dcebe4e77a394310277d73b86
+              name: 'Days left [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.days.left[{#HOST}]'
+              units: days
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.not_after.timestamp
+                - type: JAVASCRIPT
+                  parameters:
+                    - 'return Math.floor((value - Date.now()/1000)/86400);'
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+              trigger_prototypes:
+                - uuid: 41babc2ef1d54229a0452f3e52b2b026
+                  expression: 'last(/Website certificate SSL by Zabbix agent 2/cert.days.left[{#HOST}])<7'
+                  name: 'Cert expires in 7 days {#HOST}'
+                  priority: HIGH
+                - uuid: 935b202239474096b005da2fb1bd16bc
+                  expression: 'last(/Website certificate SSL by Zabbix agent 2/cert.days.left[{#HOST}])<=0'
+                  name: 'SSL certificate expired {#HOST}'
+                  priority: DISASTER
+            - uuid: 50e4d1a2b2304e4ba6ca56dc43b8b412
+              name: 'Issuer [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.issuer[{#HOST}]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.issuer
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: 2ca4550a547b460da5bc7afba52e1d68
+              name: 'Last validation status [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.message[{#HOST}]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.result.message
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: c2c56bb4a260488aabe787e071a7810d
+              name: 'Valid from [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.not_before[{#HOST}]'
+              trends: '0'
+              units: unixtime
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.not_before.timestamp
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: 06f3ec0944d84b3e82ac2e95d89edd86
+              name: 'Public key algorithm [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.public_key_algorithm[{#HOST}]'
+              value_type: CHAR
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.public_key_algorithm
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: 8d585551e53844d5b7cbccb4676a97b9
+              name: 'Serial number [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.serial_number[{#HOST}]'
+              history: 90d
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.serial_number
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: 61eb8eff4781490480243eb33ef06619
+              name: 'Fingerprint SHA1 [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.sha1_fingerprint[{#HOST}]'
+              history: 90d
+              value_type: CHAR
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.sha1_fingerprint
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: 61f3a9cfbee4435a91a3378b44634ac4
+              name: 'Fingerprint SHA256 [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.sha256_fingerprint[{#HOST}]'
+              history: 90d
+              value_type: CHAR
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.sha256_fingerprint
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+              trigger_prototypes:
+                - uuid: 4c8b5dfc0ec44b50ac324360f2cc1c19
+                  expression: 'change(/Website certificate SSL by Zabbix agent 2/cert.sha256_fingerprint[{#HOST}])=1'
+                  name: 'SSL certificate has been changed {#HOST}'
+                  priority: HIGH
+            - uuid: e26eef7e06964649948466613dabb8f4
+              name: 'Signature algorithm [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.signature_algorithm[{#HOST}]'
+              value_type: CHAR
+              description: 'The algorithm identifier for the algorithm used by the CA to sign the certificate.'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.signature_algorithm
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: b07dd2aed200424ab82d2287e0f1595f
+              name: 'Subject [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.subject[{#HOST}]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.subject
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: 40ec9bd8468b475cac0128d59d08719c
+              name: 'Validation result [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.validation[{#HOST}]'
+              history: 90d
+              value_type: CHAR
+              description: 'The certificate validation result. Possible values: valid/invalid/valid-but-self-signed'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.result.value
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+              trigger_prototypes:
+                - uuid: 52d863b46b2b403bbd9bbdf0ac228023
+                  expression: 'last(/Website certificate SSL by Zabbix agent 2/cert.validation[{#HOST}])<>"valid"'
+                  name: 'SSL Cert is invalid!  {#HOST}'
+                  priority: HIGH
+            - uuid: 56df0a1cc2f54f66bb4a769d58a765f8
+              name: 'Expires on [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.valid_to[{#HOST}]'
+              trends: '0'
+              units: unixtime
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.not_after.timestamp
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: 3ad05c736b834f3582d754ae11f1705d
+              name: 'Version [{#HOST}]'
+              type: DEPENDENT
+              key: 'cert.version[{#HOST}]'
+              value_type: CHAR
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.x509.version
+              master_item:
+                key: 'web.certificate.get[{#HOST},443,]'
+            - uuid: 7bbe0668b9a54428bb373b2018067f76
+              name: 'Cert raw [{#HOST}]'
+              key: 'web.certificate.get[{#HOST},443,]'
+              history: 1h
+              value_type: TEXT
