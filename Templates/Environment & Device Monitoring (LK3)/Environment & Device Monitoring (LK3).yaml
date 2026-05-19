@@ -1,0 +1,129 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 717dcaa0016f41d5b4fe66f5119c5e4e
+      template: 'LK3 Temperature Sensor'
+      name: 'LK3 Temperature Sensor'
+      groups:
+        - name: Templates
+      items:
+        - uuid: d1e25d694ff14bc78b875698e30ec842
+          name: Hostname
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.5.0
+          key: hostname
+          delay: 1d
+          history: 5d
+          value_type: TEXT
+        - uuid: d01d996f37bf4e288b6e48a94c7eee18
+          name: 'Room Humidity'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.7616.4.10.0
+          key: humidity.room
+          history: 30d
+          value_type: FLOAT
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          triggers:
+            - uuid: 78f703b2a8524d0bb6ac4d2baff3da73
+              expression: 'min(/LK3 Temperature Sensor/humidity.room,3)>{$MAX.HUMIDITY}'
+              name: 'Room Humidity Exceeded {$MAX.HUMIDITY}'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: 35f1905a6ec14c80aac818caa7bb1269
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          history: 30d
+          triggers:
+            - uuid: b0bfc412c5c9440ba11d48343eb1dbf9
+              expression: 'min(/LK3 Temperature Sensor/icmpping,15m)=0'
+              name: 'No ICMP Response for 15 Minutes'
+              priority: HIGH
+        - uuid: 931cf86854c14eb98cd2b59f77f8f22d
+          name: 'ICMP Response Time'
+          type: SIMPLE
+          key: icmppingsec
+          history: 30d
+          value_type: FLOAT
+          units: s
+        - uuid: afa33d97d8f044269b10114bc39551fe
+          name: 'Water Leak Sensor'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.7616.3.1.0
+          key: status.inpa1
+          history: 365d
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          triggers:
+            - uuid: 3b4a937d654647608fec53c79c88e0c2
+              expression: 'min(/LK3 Temperature Sensor/status.inpa1,#3)>25'
+              name: 'Water Leak Detected'
+              priority: DISASTER
+        - uuid: 951ddc69ca7a4e36989ee012a44e92b4
+          name: 'Firmware Version'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.1.0
+          key: system.firmware.version
+          delay: 1h
+          history: 5d
+          value_type: TEXT
+        - uuid: 06064ece39c64c2a94cbd7210ba23b5a
+          name: 'Device Temperature'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.7616.3.8.0
+          key: temp.device
+          delay: 10m
+          history: 365d
+          value_type: FLOAT
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+        - uuid: ee9567125735483296c1a17c9118801e
+          name: 'Room Temperature'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.7616.4.9.0
+          key: temp.room
+          history: 30d
+          value_type: FLOAT
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          triggers:
+            - uuid: 1b94499b07e54bc39a5cc3a6d47941da
+              expression: 'min(/LK3 Temperature Sensor/temp.room,#3)>{$TEMP.AVERAGE}'
+              name: 'Room Temperature Exceeded {$TEMP.AVERAGE}°C'
+              priority: AVERAGE
+              manual_close: 'YES'
+            - uuid: 839a07638e4e4f93b4eafa27e05d445a
+              expression: 'min(/LK3 Temperature Sensor/temp.room,#3)>{$TEMP.CRITICAL}'
+              name: 'Room Temperature Exceeded {$TEMP.CRITICAL}°C'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: 84f854a96b3b4b9997d164a387f2beb3
+          name: 'Input Voltage'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.7616.3.7.0
+          key: voltage.input
+          history: 5d
+          value_type: FLOAT
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+      macros:
+        - macro: '{$MAX.HUMIDITY}'
+          value: '70'
+        - macro: '{$TEMP.AVERAGE}'
+          value: '24'
+        - macro: '{$TEMP.CRITICAL}'
+          value: '28'
