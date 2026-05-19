@@ -1,0 +1,28 @@
+🎯 Purpose
+
+Template for monitoring environment conditions and device health via SNMP and ICMP.
+
+📊 Monitored Metrics
+Room Temperature (temp.room)
+Device Temperature (temp.device)
+Room Humidity (humidity.room)
+Input Voltage (voltage.input)
+Water Leak (status.inpa1)
+ICMP Ping (icmpping)
+ICMP Response Time (icmppingsec)
+Firmware Version (system.firmware.version)
+
+🚨 Triggers
+No ICMP Response for 15m
+High Room Humidity (> {$MAX.HUMIDITY})
+Warning: Room Temperature (> {$TEMP.AVG}°C)
+Critical: Room Temperature (> {$TEMP.CRITICAL}°C)
+Water Leak Detected
+
+🔧 Macros
+{$TEMP.AVG} – warning temperature
+{$TEMP.CRITICAL} – critical temperature
+{$MAX.HUMIDITY} – humidity threshold
+
+🧠 Summary
+Monitors temperature, humidity, power, connectivity, and leak detection, providing early alerts for critical conditions.
