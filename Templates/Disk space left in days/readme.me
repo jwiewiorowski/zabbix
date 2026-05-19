@@ -1,1 +1,28 @@
+Zabbix – Filesystem: Time Left to 100%
 
+1️⃣ Macros
+Define at template or host level:
+
+{$TIME_LEFT_DAYS} = 1 - Trend analysis window (how much history is used)
+{$FS.PUSED.MAX.CRIT} = 99 - Target filesystem usage (%)
+
+2️⃣ Iteam prototype
+In discovery "Mounted filesystem discovery"  we have to add iteam
+
+Name: FS [{#FSNAME}]: Time left to 100%
+Type: Calculated
+Key: vfs.fs.timeleft[{#FSNAME}]
+Type of information: Numeric (float)
+Formula: round(timeleft(//vfs.fs.dependent.size[{#FSNAME},pused],{$TIME_LEFT_DAYS},{$FS.PUSED.MAX.CRIT})/86400,2)
+Units:d
+Update interval: 1m
+
+3️⃣Item Tags
+component = storage
+filesystem = {#FSNAME}
+fstype = {#FSTYPE}
+
+4️⃣Trigger Prototype
+Name: FS [{#FSNAME}]: Less than {$TIME_LEFT_DAYS} day(s) left
+Expression: last(/TEMPLATE/vfs.fs.timeleft[{#FSNAME}]) < {$TIME_LEFT_DAYS} and last(/TEMPLATE/vfs.fs.dependent.size[{#FSNAME},pused]) > 80
+Recovery Expression: last(/TEMPLATE/vfs.fs.timeleft[{#FSNAME}]) > {$TIME_LEFT_DAYS} * 1.5
